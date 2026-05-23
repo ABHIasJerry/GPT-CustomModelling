@@ -227,16 +227,26 @@ def create_sample_data(data_path="private_data.txt", num_samples=1000):
     print(f"Creating sample training data: {data_path}")
     with open(data_path, "w", encoding="utf-8") as f:
         # Create diverse training data
+        # templates = [
+        #     "This is a sample sentence number {} for training the SLM.",
+        #     "Machine learning models require large amounts of training data to perform well.",
+        #     "Natural language processing is a challenging and important field in AI.",
+        #     "The quick brown fox jumps over the lazy dog.",
+        #     "Language models can generate text that is coherent and contextually relevant.",
+        #     "Training a small language model requires careful consideration of various hyperparameters.",
+        #     "Data preprocessing is an essential step in machine learning pipelines.",
+        #     "The transformer architecture has revolutionized the field of deep learning.",
+        # ]
         templates = [
-            "This is a sample sentence number {} for training the SLM.",
-            "Machine learning models require large amounts of training data to perform well.",
-            "Natural language processing is a challenging and important field in AI.",
-            "The quick brown fox jumps over the lazy dog.",
-            "Language models can generate text that is coherent and contextually relevant.",
-            "Training a small language model requires careful consideration of various hyperparameters.",
-            "Data preprocessing is an essential step in machine learning pipelines.",
-            "The transformer architecture has revolutionized the field of deep learning.",
-        ]
+                "This is a sample instance number {} for training the model.",
+                "Machine learning models require sufficient amounts of training data to perform well.",
+                "Working with {} data is a challenging and important field in AI.",
+                "The quick brown {} jumps over the lazy {}.",
+                "Models can generate outputs that are coherent and contextually relevant.",
+                "Training a {} model requires careful consideration of various hyperparameters.",
+                "Data preprocessing is an essential step in machine learning pipelines.",
+                "The {} architecture has significantly influenced the field of {}.",
+            ]
         
         for i in range(num_samples):
             template = templates[i % len(templates)]

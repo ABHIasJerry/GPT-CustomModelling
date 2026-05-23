@@ -446,7 +446,7 @@ if __name__ == "__main__":
         model, tokenizer = load_model_and_tokenizer(model_dir="./my_slm")
         
         # Generate text (simple method)
-        prompt = "Machine learning"
+        prompt = input("Enter the prompt: ")
         generate_text_simple(model, tokenizer, prompt, max_length=80, num_sequences=2)
         
         # Generate text (pipeline method)

@@ -7,3 +7,6 @@ venv/
 
 # Optional: Ignore any env-related files
 *.env
+
+# Optional: Ignore any pretrained model files (if you have any)
+my_slm/
