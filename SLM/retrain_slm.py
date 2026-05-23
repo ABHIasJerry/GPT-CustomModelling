@@ -1,3 +1,15 @@
+# ================================================================
+# 📂 Project   : GPT Custom Modelling
+# 📜 File      : retrain_slm.py
+# 🧑‍💻 Author    : Abhinaba
+# 🕒 Created   : 2026-05-23
+# 🔄 Revision  : v1.0.0
+# ✨ Purpose   : Retraining Small Language model with custom dataset
+# ================================================================
+# 📝 Change Log:
+#   v1.0.0 | 2026-05-23 | Initial version
+# ================================================================
+
 import os
 import torch
 from transformers import (

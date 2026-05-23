@@ -1,3 +1,15 @@
+# ================================================================
+# 📂 Project   : GPT Custom Modelling
+# 📜 File      : app.py
+# 🧑‍💻 Author    : Abhinaba
+# 🕒 Created   : 2026-05-23
+# 🔄 Revision  : v1.0.0
+# ✨ Purpose   : App for chatting with a Small Language Model
+# ================================================================
+# 📝 Change Log:
+#   v1.0.0 | 2026-05-23 | Initial version
+# ================================================================
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import torch

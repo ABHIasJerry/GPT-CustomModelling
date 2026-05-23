@@ -1,3 +1,15 @@
+# ================================================================
+# 📂 Project   : GPT Custom Modelling
+# 📜 File      : app_with_logging.py
+# 🧑‍💻 Author    : Abhinaba
+# 🕒 Created   : 2026-05-23
+# 🔄 Revision  : v1.0.0
+# ✨ Purpose   : App with logging for Small Language model
+# ================================================================
+# 📝 Change Log:
+#   v1.0.0 | 2026-05-23 | Initial version
+# ================================================================
+
 import torch
 import json
 import uuid
