@@ -515,7 +515,7 @@ if __name__ == "__main__":
     print("# COMPREHENSIVE GUIDE: LOAD, USE, AND RETRAIN CUSTOM SLM MODEL")
     print("#" * 60)
 
-    parser = argparse.ArgumentParser(description="Run SLM model examples")
+    parser = argparse.ArgumentParser(description="Guide to run the SLM codebook.")
     parser.add_argument(
         "--operation",
         type=str,
