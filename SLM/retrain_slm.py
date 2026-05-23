@@ -223,9 +223,15 @@ def retrain_model(
     model = GPT2LMHeadModel.from_pretrained(model_dir)
     print(f"✓ Model and tokenizer loaded")
     
-    # Load new dataset
-    print(f"\n2. Loading new training data from {new_data_path}...")
-    raw_datasets = load_dataset("text", data_files={"train": new_data_path})
+    # # Load new dataset from online source (e.g., Hugging Face Hub)
+    # print(f"\n2. Loading new training data from {new_data_path}...")
+    # raw_datasets = load_dataset("text", data_files={"train": new_data_path})
+    # print(f"✓ Loaded {len(raw_datasets['train'])} examples")
+
+    # Load new dataset from local text file for training
+    local_file_path = "private_data.txt"   # replace with your actual file path
+    print(f"\n2. Loading new training data from {local_file_path}...")
+    raw_datasets = load_dataset("text", data_files={"train": local_file_path})
     print(f"✓ Loaded {len(raw_datasets['train'])} examples")
     
     # Tokenize new data
