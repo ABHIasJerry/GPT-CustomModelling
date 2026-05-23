@@ -1,0 +1,380 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║         FASTAPI SLM CHAT - SETUP AND USAGE GUIDE                          ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+═══════════════════════════════════════════════════════════════════════════════
+1. INSTALLATION & SETUP
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: Install required dependencies
+   pip install fastapi uvicorn transformers torch
+
+Step 2: Ensure your trained model exists
+   - Model should be in ./my_slm directory
+   - Files needed:
+     * pytorch_model.bin
+     * config.json
+     * tokenizer.json
+     * tokenizer_config.json
+
+Step 3: Run the FastAPI server
+   python app.py
+
+   Expected output:
+   ============================================================
+   Starting SLM Chat API Server
+   ============================================================
+   
+   API Documentation:
+     - Swagger UI: http://localhost:8000/docs
+     - ReDoc: http://localhost:8000/redoc
+   
+   Endpoints:
+     - GET  / : Root endpoint
+     - GET  /health : Health check
+     - GET  /model-info : Model information
+     - POST /chat : Advanced chat (JSON body)
+     - POST /chat-simple : Simple chat (query parameter)
+   
+   ============================================================
+
+   The server is now running and ready for requests!
+
+
+═══════════════════════════════════════════════════════════════════════════════
+2. API ENDPOINTS
+═══════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+A. GET /
+────────────────────────────────────────────────────────────────────────────────
+Purpose: Welcome message with available endpoints
+Method: GET
+URL: http://localhost:8000/
+
+Response:
+{
+  "message": "Welcome to SLM Chat API",
+  "endpoints": {
+    "/docs": "Interactive API documentation",
+    "/redoc": "Alternative API documentation",
+    "/model-info": "Get model information",
+    "/chat": "Chat with the model (POST)"
+  }
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+B. GET /health
+────────────────────────────────────────────────────────────────────────────────
+Purpose: Check if server and model are running
+Method: GET
+URL: http://localhost:8000/health
+
+Response:
+{
+  "status": "healthy",
+  "model_loaded": true,
+  "device": "cuda"  or  "cpu"
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+C. GET /model-info
+────────────────────────────────────────────────────────────────────────────────
+Purpose: Get detailed information about the loaded model
+Method: GET
+URL: http://localhost:8000/model-info
+
+Response:
+{
+  "model_name": "GPT-2 Small Language Model",
+  "vocab_size": 30000,
+  "device": "cuda",
+  "max_sequence_length": 512,
+  "status": "ready"
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+D. POST /chat (RECOMMENDED - Advanced)
+────────────────────────────────────────────────────────────────────────────────
+Purpose: Chat with the model with advanced parameters
+Method: POST
+URL: http://localhost:8000/chat
+Content-Type: application/json
+
+Request Body:
+{
+  "prompt": "Machine learning",
+  "max_length": 100,
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "num_sequences": 1
+}
+
+Parameters:
+  - prompt (string, required): Your input text
+  - max_length (integer, optional): Max tokens to generate (10-512, default: 100)
+  - temperature (float, optional): Randomness (0.0-2.0, default: 0.7)
+    * Lower = more deterministic
+    * Higher = more creative/random
+  - top_p (float, optional): Nucleus sampling (0-1, default: 0.9)
+  - num_sequences (integer, optional): Num outputs (1-5, default: 1)
+
+Response:
+{
+  "prompt": "Machine learning",
+  "generated_texts": [
+    "Machine learning is a subset of artificial intelligence that..."
+  ],
+  "device": "cuda",
+  "num_tokens_generated": 45
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+E. POST /chat-simple (SIMPLE)
+────────────────────────────────────────────────────────────────────────────────
+Purpose: Simple chat with just a prompt (query parameter)
+Method: POST
+URL: http://localhost:8000/chat-simple?prompt=Machine%20learning
+
+Response:
+{
+  "prompt": "Machine learning",
+  "generated_text": "Machine learning is a powerful field that enables..."
+}
+
+
+═══════════════════════════════════════════════════════════════════════════════
+3. USING POSTMAN
+═══════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 1: Open Postman and Create New Request
+────────────────────────────────────────────────────────────────────────────────
+
+1. Open Postman application
+2. Click "Create New" → "HTTP Request"
+3. Give it a name: "SLM Chat"
+
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 2: Test Health Check (Simple GET)
+────────────────────────────────────────────────────────────────────────────────
+
+1. Select method: GET
+2. Enter URL: http://localhost:8000/health
+3. Click "Send"
+4. You should see:
+   {
+     "status": "healthy",
+     "model_loaded": true,
+     "device": "cuda"
+   }
+
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 3: Chat with Model (POST with JSON)
+────────────────────────────────────────────────────────────────────────────────
+
+1. Select method: POST
+2. Enter URL: http://localhost:8000/chat
+3. Click "Body" tab
+4. Select "raw"
+5. Select "JSON" from dropdown
+6. Paste this template:
+
+{
+  "prompt": "Machine learning",
+  "max_length": 100,
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "num_sequences": 1
+}
+
+7. Modify the "prompt" value with your question
+8. Click "Send"
+9. View the response below
+
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 4: Simple Chat (POST with Query Parameter)
+────────────────────────────────────────────────────────────────────────────────
+
+1. Select method: POST
+2. Enter URL: http://localhost:8000/chat-simple?prompt=Tell%20me%20about%20AI
+3. Click "Send"
+4. View the generated response
+
+
+────────────────────────────────────────────────────────────────────────────────
+STEP 5: Get Model Info (GET)
+────────────────────────────────────────────────────────────────────────────────
+
+1. Select method: GET
+2. Enter URL: http://localhost:8000/model-info
+3. Click "Send"
+4. See model configuration details
+
+
+═══════════════════════════════════════════════════════════════════════════════
+4. EXAMPLE REQUESTS FOR POSTMAN
+═══════════════════════════════════════════════════════════════════════════════
+
+Example 1: Generate Creative Text
+──────────────────────────────────────────────────────────────────────────────
+POST http://localhost:8000/chat
+
+Body (JSON):
+{
+  "prompt": "Artificial intelligence is",
+  "max_length": 150,
+  "temperature": 0.9,
+  "top_p": 0.95,
+  "num_sequences": 2
+}
+
+
+Example 2: Generate Deterministic Text
+──────────────────────────────────────────────────────────────────────────────
+POST http://localhost:8000/chat
+
+Body (JSON):
+{
+  "prompt": "Python programming",
+  "max_length": 80,
+  "temperature": 0.3,
+  "top_p": 0.9,
+  "num_sequences": 1
+}
+
+
+Example 3: Generate Multiple Variations
+──────────────────────────────────────────────────────────────────────────────
+POST http://localhost:8000/chat
+
+Body (JSON):
+{
+  "prompt": "Deep learning",
+  "max_length": 100,
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "num_sequences": 3
+}
+
+
+Example 4: Simple Single Request
+──────────────────────────────────────────────────────────────────────────────
+POST http://localhost:8000/chat-simple?prompt=Neural%20networks
+
+
+═══════════════════════════════════════════════════════════════════════════════
+5. USING AUTOMATIC SWAGGER UI
+═══════════════════════════════════════════════════════════════════════════════
+
+FastAPI automatically generates interactive API documentation!
+
+1. Open browser and go to: http://localhost:8000/docs
+2. You'll see all endpoints with descriptions
+3. Click on any endpoint to expand it
+4. Click "Try it out"
+5. Fill in the parameters
+6. Click "Execute"
+7. See the response below
+
+
+═══════════════════════════════════════════════════════════════════════════════
+6. CURL EXAMPLES (Command Line)
+═══════════════════════════════════════════════════════════════════════════════
+
+Health Check:
+──────────────────────────────────────────────────────────────────────────────
+curl -X GET "http://localhost:8000/health"
+
+
+Model Info:
+──────────────────────────────────────────────────────────────────────────────
+curl -X GET "http://localhost:8000/model-info"
+
+
+Chat (Advanced):
+──────────────────────────────────────────────────────────────────────────────
+curl -X POST "http://localhost:8000/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Machine learning",
+    "max_length": 100,
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "num_sequences": 1
+  }'
+
+
+Chat (Simple):
+──────────────────────────────────────────────────────────────────────────────
+curl -X POST "http://localhost:8000/chat-simple?prompt=Hello%20AI"
+
+
+═══════════════════════════════════════════════════════════════════════════════
+7. TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Issue: "Model not found" error
+─────────────────────────────────────────────────────────────────────────────
+Solution:
+  - Make sure you've trained the model using train_slm_fixed.py
+  - Verify ./my_slm directory exists with model files
+  - Check MODEL_DIR path in app.py matches your setup
+
+
+Issue: "Connection refused" on localhost:8000
+─────────────────────────────────────────────────────────────────────────────
+Solution:
+  - Make sure the server is running (python app.py)
+  - Check if port 8000 is already in use
+  - Try a different port: python app.py (modify uvicorn.run port=8001)
+
+
+Issue: Slow response time
+─────────────────────────────────────────────────────────────────────────────
+Solution:
+  - This is normal for the first request (model loads)
+  - Subsequent requests are faster
+  - If using CPU, consider using GPU (torch with CUDA)
+  - Reduce max_length parameter
+
+
+Issue: Out of memory error
+─────────────────────────────────────────────────────────────────────────────
+Solution:
+  - Reduce max_length parameter
+  - Reduce num_sequences parameter
+  - Close other applications
+  - Use CPU instead of GPU if available
+
+
+═══════════════════════════════════════════════════════════════════════════════
+8. QUICK START CHEATSHEET
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Terminal: Start server
+   python app.py
+
+2. Browser: Open Swagger docs
+   http://localhost:8000/docs
+
+3. Postman: POST to /chat
+   URL: http://localhost:8000/chat
+   Body:
+   {
+     "prompt": "Your question here",
+     "max_length": 100
+   }
+
+4. Done! You're chatting with your model! 🎉
+
+
+═══════════════════════════════════════════════════════════════════════════════

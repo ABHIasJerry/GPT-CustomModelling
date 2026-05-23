@@ -1,0 +1,580 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║      FASTAPI SLM CHAT WITH LANGCHAIN LOGGING - COMPLETE GUIDE            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+═══════════════════════════════════════════════════════════════════════════════
+1. WHAT'S NEW: LOGGING FEATURES
+═══════════════════════════════════════════════════════════════════════════════
+
+This enhanced version includes:
+
+✓ Token Usage Tracking
+  - Counts prompt tokens (input)
+  - Counts completion tokens (output)
+  - Tracks total tokens per message and per chat
+
+✓ Chat Session Management
+  - Auto-generates unique chat IDs
+  - Groups messages into conversations
+  - Tracks creation time and message count
+
+✓ Database Storage
+  - SQLite database (chat_logs.db)
+  - Persistent logging across sessions
+  - Efficient query system
+
+✓ Analytics & Reporting
+  - Get individual chat statistics
+  - View chat message history
+  - Export logs to JSON
+  - Overall usage statistics
+
+✓ LangChain Integration
+  - Custom callback handler for logging
+  - Follows LangChain callback patterns
+  - Extensible architecture
+
+
+═══════════════════════════════════════════════════════════════════════════════
+2. SETUP AND RUN
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: Install dependencies
+────────────────────────────────────────────────────────────────────────────
+pip install fastapi uvicorn transformers torch langchain
+
+
+Step 2: Run the server
+────────────────────────────────────────────────────────────────────────────
+python app_with_logging.py
+
+Expected Output:
+══════════════════════════════════════════════════════════════════
+Starting SLM Chat API with Token Logging
+══════════════════════════════════════════════════════════════════
+
+API Documentation:
+  - Swagger UI: http://localhost:8000/docs
+  - ReDoc: http://localhost:8000/redoc
+
+Key Endpoints:
+  - POST   /chat : Chat and log tokens
+  - GET    /chat/stats/{chat_id} : Get chat statistics
+  - GET    /chat/history/{chat_id} : Get message history
+  - GET    /chats : List all chats
+  - GET    /logs/stats : Get overall statistics
+  - GET    /logs/export : Export logs to JSON
+  - DELETE /chat/{chat_id} : Delete a chat
+
+Database: chat_logs.db
+══════════════════════════════════════════════════════════════════
+
+Step 3: Server is ready!
+────────────────────────────────────────────────────────────────────────────
+The database chat_logs.db will be created automatically
+
+
+═══════════════════════════════════════════════════════════════════════════════
+3. DATABASE STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+The SQLite database has two tables:
+
+TABLE: chats
+────────────────────────────────────────────────────────────────────────────
+chat_id (TEXT PRIMARY KEY)       - Unique identifier for each chat session
+created_at (TIMESTAMP)           - When the chat was started
+total_prompt_tokens (INTEGER)    - Total input tokens in this chat
+total_completion_tokens (INTEGER)- Total output tokens in this chat
+total_tokens (INTEGER)           - Total of all tokens
+messages_count (INTEGER)         - Number of messages in this chat
+
+Example row:
+┌──────────────────────────────────┬─────────────────────┬────┬────┬──────┬──────┐
+│ chat_id                          │ created_at          │ pt │ ct │ tt   │ msgs │
+├──────────────────────────────────┼─────────────────────┼────┼────┼──────┼──────┤
+│ 550e8400-e29b-41d4-a716-446655 │ 2024-01-15 10:30:00 │ 45 │ 95 │ 140  │  3   │
+└──────────────────────────────────┴─────────────────────┴────┴────┴──────┴──────┘
+
+
+TABLE: messages
+────────────────────────────────────────────────────────────────────────────
+id (INTEGER PRIMARY KEY)         - Auto-increment message ID
+chat_id (TEXT FOREIGN KEY)       - Reference to parent chat
+timestamp (TIMESTAMP)            - When this message was sent
+prompt (TEXT)                    - User's input text
+generated_text (TEXT)            - Model's generated response
+prompt_tokens (INTEGER)          - Tokens in the prompt
+completion_tokens (INTEGER)      - Tokens in the response
+total_tokens (INTEGER)           - Sum of above two
+temperature (REAL)               - Temperature parameter used
+max_length (INTEGER)             - Max length parameter used
+top_p (REAL)                     - Top-p parameter used
+
+Example row:
+┌────┬──────────────┬─────────────┬────────────┬──────────────┬───┬───┬────┬──────┬──────┬────┐
+│ id │ chat_id      │ timestamp   │ prompt     │ gen_text     │ pt│ ct│ tt │ temp │ max_l│top_p
+├────┼──────────────┼─────────────┼────────────┼──────────────┼───┼───┼────┼──────┼──────┼────┤
+│ 1  │ 550e8400... │ 10:30:05    │ "Machine" │ "Machine... │ 3 │ 95│ 98 │ 0.7 │ 100  │ 0.9│
+└────┴──────────────┴─────────────┴────────────┴──────────────┴───┴───┴────┴──────┴──────┴────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+4. API ENDPOINTS WITH EXAMPLES
+═══════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+A. POST /chat - Chat and Log Tokens
+────────────────────────────────────────────────────────────────────────────────
+
+Purpose: Send a message and get auto-logged response
+
+Request:
+POST http://localhost:8000/chat
+Content-Type: application/json
+
+{
+  "prompt": "Machine learning",
+  "chat_id": "550e8400-e29b-41d4-a716-446655440000",
+  "max_length": 100,
+  "temperature": 0.7,
+  "top_p": 0.9
+}
+
+Parameters:
+  - prompt (required): Your input text
+  - chat_id (optional): UUID of chat. If not provided, auto-generated
+  - max_length: Max tokens (10-512, default: 100)
+  - temperature: Randomness (0.0-2.0, default: 0.7)
+  - top_p: Nucleus sampling (0-1, default: 0.9)
+  - num_sequences: Outputs (1-5, default: 1)
+
+Response (200 OK):
+{
+  "chat_id": "550e8400-e29b-41d4-a716-446655440000",
+  "prompt": "Machine learning",
+  "generated_texts": [
+    "Machine learning is a subset of artificial intelligence..."
+  ],
+  "prompt_tokens": 3,
+  "completion_tokens": 95,
+  "total_tokens": 98,
+  "device": "cuda",
+  "timestamp": "2024-01-15T10:30:05.123456"
+}
+
+⭐ KEY FEATURE: Automatically creates a chat session if chat_id doesn't exist!
+
+
+────────────────────────────────────────────────────────────────────────────────
+B. GET /chat/stats/{chat_id} - Get Chat Statistics
+────────────────────────────────────────────────────────────────────────────────
+
+Purpose: Get token usage summary for a specific chat
+
+Request:
+GET http://localhost:8000/chat/stats/550e8400-e29b-41d4-a716-446655440000
+
+Response (200 OK):
+{
+  "chat_id": "550e8400-e29b-41d4-a716-446655440000",
+  "created_at": "2024-01-15T10:30:00",
+  "total_prompt_tokens": 45,
+  "total_completion_tokens": 285,
+  "total_tokens": 330,
+  "messages_count": 3
+}
+
+⭐ Shows total tokens used across all messages in the chat
+
+
+────────────────────────────────────────────────────────────────────────────────
+C. GET /chat/history/{chat_id} - Get Message History
+────────────────────────────────────────────────────────────────────────────────
+
+Purpose: Get all messages in a specific chat with full details
+
+Request:
+GET http://localhost:8000/chat/history/550e8400-e29b-41d4-a716-446655440000
+
+Response (200 OK):
+{
+  "chat_id": "550e8400-e29b-41d4-a716-446655440000",
+  "message_count": 3,
+  "messages": [
+    {
+      "id": 1,
+      "timestamp": "2024-01-15T10:30:05",
+      "prompt": "Machine learning",
+      "generated_text": "Machine learning is a subset...",
+      "prompt_tokens": 3,
+      "completion_tokens": 95,
+      "total_tokens": 98,
+      "temperature": 0.7,
+      "max_length": 100,
+      "top_p": 0.9
+    },
+    {
+      "id": 2,
+      "timestamp": "2024-01-15T10:31:10",
+      "prompt": "Deep learning",
+      "generated_text": "Deep learning uses neural networks...",
+      "prompt_tokens": 2,
+      "completion_tokens": 87,
+      "total_tokens": 89,
+      "temperature": 0.7,
+      "max_length": 100,
+      "top_p": 0.9
+    },
+    ...more messages...
+  ]
+}
+
+⭐ Shows complete conversation history with token breakdowns
+
+
+────────────────────────────────────────────────────────────────────────────────
+D. GET /chats - List All Chat Sessions
+────────────────────────────────────────────────────────────────────────────────
+
+Purpose: View all chat sessions with summary statistics
+
+Request:
+GET http://localhost:8000/chats
+
+Response (200 OK):
+{
+  "summary": {
+    "total_chats": 3,
+    "total_prompt_tokens": 125,
+    "total_completion_tokens": 750,
+    "total_tokens": 875,
+    "total_messages": 8
+  },
+  "chats": [
+    {
+      "chat_id": "550e8400-e29b-41d4-a716-446655440000",
+      "created_at": "2024-01-15T10:30:00",
+      "total_prompt_tokens": 45,
+      "total_completion_tokens": 285,
+      "total_tokens": 330,
+      "messages_count": 3
+    },
+    {
+      "chat_id": "660e8400-e29b-41d4-a716-446655440001",
+      "created_at": "2024-01-15T11:00:00",
+      "total_prompt_tokens": 40,
+      "total_completion_tokens": 260,
+      "total_tokens": 300,
+      "messages_count": 3
+    },
+    ...more chats...
+  ]
+}
+
+⭐ Great for dashboard and analytics!
+
+
+────────────────────────────────────────────────────────────────────────────────
+E. GET /logs/stats - Get Overall Statistics
+────────────────────────────────────────────────────────────────────────────────
+
+Purpose: Global statistics across all chats
+
+Request:
+GET http://localhost:8000/logs/stats
+
+Response (200 OK):
+{
+  "total_chats": 3,
+  "total_messages": 8,
+  "total_prompt_tokens": 125,
+  "total_completion_tokens": 750,
+  "total_tokens": 875,
+  "average_tokens_per_message": 109.375
+}
+
+⭐ Perfect for monitoring overall usage
+
+
+────────────────────────────────────────────────────────────────────────────────
+F. GET /logs/export - Export All Logs to JSON
+────────────────────────────────────────────────────────────────────────────────
+
+Purpose: Export complete logs for analysis or backup
+
+Request:
+GET http://localhost:8000/logs/export?output_file=logs_backup.json
+
+Response (200 OK):
+{
+  "message": "Logs exported successfully",
+  "file": "logs_backup.json",
+  "timestamp": "2024-01-15T12:00:00"
+}
+
+Creates file: logs_backup.json with structure:
+{
+  "export_time": "2024-01-15T12:00:00",
+  "total_chats": 3,
+  "chats": [...],
+  "messages": [...]
+}
+
+⭐ For backups and external analysis
+
+
+────────────────────────────────────────────────────────────────────────────────
+G. DELETE /chat/{chat_id} - Delete a Chat
+────────────────────────────────────────────────────────────────────────────────
+
+Purpose: Remove a chat session and all its logs
+
+Request:
+DELETE http://localhost:8000/chat/550e8400-e29b-41d4-a716-446655440000
+
+Response (200 OK):
+{
+  "message": "Chat 550e8400-e29b-41d4-a716-446655440000 deleted successfully",
+  "timestamp": "2024-01-15T12:05:00"
+}
+
+⭐ Permanently removes chat from database
+
+
+═══════════════════════════════════════════════════════════════════════════════
+5. POSTMAN WORKFLOW EXAMPLES
+═══════════════════════════════════════════════════════════════════════════════
+
+Workflow 1: Complete Chat Session with Logging
+────────────────────────────────────────────────────────────────────────────────
+
+1️⃣  Start a new chat (auto-generate chat_id)
+   POST http://localhost:8000/chat
+   Body:
+   {
+     "prompt": "What is artificial intelligence?",
+     "max_length": 100,
+     "temperature": 0.7
+   }
+   
+   Note: Response contains chat_id. Copy it for next requests!
+
+2️⃣  Continue same chat (use returned chat_id)
+   POST http://localhost:8000/chat
+   Body:
+   {
+     "prompt": "Tell me about machine learning",
+     "chat_id": "<copied_chat_id_from_step_1>",
+     "max_length": 100
+   }
+
+3️⃣  View chat statistics
+   GET http://localhost:8000/chat/stats/<copied_chat_id>
+   
+   See total tokens: prompt + completion tokens
+
+4️⃣  View message history
+   GET http://localhost:8000/chat/history/<copied_chat_id>
+   
+   See all messages with individual token counts
+
+5️⃣  View all chats
+   GET http://localhost:8000/chats
+   
+   Compare with other sessions
+
+
+Workflow 2: Token Analysis Across Multiple Chats
+────────────────────────────────────────────────────────────────────────────────
+
+1. Create Chat A with questions about AI
+   POST /chat (multiple requests)
+
+2. Create Chat B with questions about ML
+   POST /chat (multiple requests)
+
+3. Get overall stats
+   GET /logs/stats
+   
+   Compare average_tokens_per_message across sessions
+
+4. Export all logs
+   GET /logs/export
+   
+   Analyze in spreadsheet or Python
+
+
+Workflow 3: Monitoring and Analytics
+────────────────────────────────────────────────────────────────────────────────
+
+1. Daily: Check token usage
+   GET /logs/stats
+   
+2. Weekly: Export logs
+   GET /logs/export
+   
+3. Monthly: Identify high-usage chats
+   GET /chats
+   Sort by total_tokens
+   
+4. As needed: Delete old chats
+   DELETE /chat/{chat_id}
+
+
+═══════════════════════════════════════════════════════════════════════════════
+6. USING LANGCHAIN CALLBACK DIRECTLY (PYTHON)
+═══════════════════════════════════════════════════════════════════════════════
+
+The TokenUsageLogger is a LangChain-compatible callback:
+
+from app_with_logging import TokenUsageLogger
+
+# Initialize logger
+logger = TokenUsageLogger(db_path="chat_logs.db")
+
+# Set current chat
+chat_id = "my-chat-123"
+logger.set_chat_id(chat_id)
+
+# Log a message
+logger.log_message(
+    chat_id=chat_id,
+    prompt="Your prompt",
+    generated_text="Model's response",
+    prompt_tokens=10,
+    completion_tokens=50,
+    temperature=0.7,
+    max_length=100,
+    top_p=0.9
+)
+
+# Get stats
+stats = logger.get_chat_stats(chat_id)
+print(f"Total tokens: {stats['total_tokens']}")
+
+# Get history
+history = logger.get_chat_history(chat_id)
+for msg in history:
+    print(f"Prompt: {msg['prompt']}")
+    print(f"Tokens: {msg['total_tokens']}")
+
+# Export
+logger.export_chat_logs("backup.json")
+
+
+═══════════════════════════════════════════════════════════════════════════════
+7. CURL EXAMPLES
+═══════════════════════════════════════════════════════════════════════════════
+
+Start a chat:
+────────────────────────────────────────────────────────────────────────────
+curl -X POST "http://localhost:8000/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Machine learning",
+    "max_length": 100,
+    "temperature": 0.7
+  }'
+
+Get chat stats:
+────────────────────────────────────────────────────────────────────────────
+curl -X GET "http://localhost:8000/chat/stats/550e8400-e29b-41d4-a716-446655440000"
+
+Get chat history:
+────────────────────────────────────────────────────────────────────────────
+curl -X GET "http://localhost:8000/chat/history/550e8400-e29b-41d4-a716-446655440000"
+
+List all chats:
+────────────────────────────────────────────────────────────────────────────
+curl -X GET "http://localhost:8000/chats"
+
+Get overall stats:
+────────────────────────────────────────────────────────────────────────────
+curl -X GET "http://localhost:8000/logs/stats"
+
+Export logs:
+────────────────────────────────────────────────────────────────────────────
+curl -X GET "http://localhost:8000/logs/export"
+
+Delete chat:
+────────────────────────────────────────────────────────────────────────────
+curl -X DELETE "http://localhost:8000/chat/550e8400-e29b-41d4-a716-446655440000"
+
+
+═══════════════════════════════════════════════════════════════════════════════
+8. TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Problem: Database locked error
+────────────────────────────────────────────────────────────────────────────
+Solution: Close any other processes accessing chat_logs.db
+          Delete chat_logs.db and restart server
+
+
+Problem: Chat ID not found (404)
+────────────────────────────────────────────────────────────────────────────
+Solution: Make sure chat was created first with POST /chat
+          Chat IDs are case-sensitive UUIDs
+
+
+Problem: Token counts seem wrong
+────────────────────────────────────────────────────────────────────────────
+Solution: Token count depends on tokenizer
+          Different models may count differently
+          This is expected behavior
+
+
+Problem: Slow database queries
+────────────────────────────────────────────────────────────────────────────
+Solution: For large datasets, create database indexes
+          Or export logs and analyze offline
+
+
+═══════════════════════════════════════════════════════════════════════════════
+9. KEY FEATURES SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Token Counting
+   - Counts input (prompt) tokens
+   - Counts output (completion) tokens
+   - Tracks per message and per chat
+
+✅ Chat Sessions
+   - Auto-generates unique UUIDs
+   - Groups related messages
+   - Timestamps for all events
+
+✅ Database Persistence
+   - SQLite (zero setup required)
+   - Permanent storage
+   - Queryable via API
+
+✅ Analytics
+   - Per-chat statistics
+   - Message history with details
+   - Overall usage metrics
+   - JSON export for analysis
+
+✅ LangChain Compatible
+   - Custom callback handler
+   - Follows callback patterns
+   - Extensible architecture
+
+✅ REST API
+   - FastAPI with auto-docs
+   - Swagger UI at /docs
+   - Full CRUD operations
+   - Error handling
+
+
+═══════════════════════════════════════════════════════════════════════════════
+10. FILES CREATED BY THE APPLICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+chat_logs.db              - SQLite database with all logs and tokens
+chat_logs.json            - Exported JSON (when using /logs/export)
+
+
+═══════════════════════════════════════════════════════════════════════════════

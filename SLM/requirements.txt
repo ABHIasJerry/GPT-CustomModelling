@@ -1,5 +1,12 @@
+###### PIP requirements for SLM
 torch 
 transformers 
 datasets
 tokenizers 
 transformers[torch]
+fastapi
+pydantic
+uvicorn
+langchain
+requests 
+###############################
