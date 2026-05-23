@@ -10,3 +10,7 @@ venv/
 
 # Optional: Ignore any pretrained model files (if you have any)
 my_slm/
+
+# Optional: Ignore any pretrained files (if you have any)
+new_training_data.txt
+incremental_data.txt

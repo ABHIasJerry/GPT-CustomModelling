@@ -12,6 +12,7 @@
 
 import os
 import torch
+import argparse
 from transformers import (
     GPT2LMHeadModel,
     GPT2TokenizerFast,
@@ -432,78 +433,62 @@ def update_model_incrementally(
     print("✓ Model updated successfully")
 
 
-# ============================================================================
-# EXAMPLE USAGE
-# ============================================================================
+# -----------------------------------------------------------------------
+# Define functions for each example
+# -----------------------------------------------------------------------
 
-if __name__ == "__main__":
-    print("\n")
-    print("#" * 60)
-    print("# COMPREHENSIVE GUIDE: LOAD, USE, AND RETRAIN SLM MODEL")
-    print("#" * 60)
-    
-    # -----------------------------------------------------------------------
-    # EXAMPLE 1: LOAD AND GENERATE TEXT
-    # -----------------------------------------------------------------------
+def model_generation():
     print("\n\n[EXAMPLE 1] Loading saved model and generating text...")
     print("-" * 60)
-    
     try:
         model, tokenizer = load_model_and_tokenizer(model_dir="./my_slm")
-        
+
         # Generate text (simple method)
         prompt = input("Enter the prompt: ")
         generate_text_simple(model, tokenizer, prompt, max_length=80, num_sequences=2)
-        
+
         # Generate text (pipeline method)
-        # generate_text_pipeline(model, tokenizer, prompt, max_length=80)
-        
+        generate_text_pipeline(model, tokenizer, prompt, max_length=80)
+
         # Calculate perplexity
-        # test_text = "This is a test sentence for evaluating the model."
-        # calculate_perplexity(model, tokenizer, test_text)
-        
+        test_text = "This is a test sentence for evaluating the model."
+        calculate_perplexity(model, tokenizer, test_text)
+
     except FileNotFoundError as e:
         print(f"⚠️  {e}")
         print("Make sure to train the model first using train_slm_fixed.py")
-    
-    
-    # -----------------------------------------------------------------------
-    # EXAMPLE 2: RETRAIN ON NEW DATA
-    # -----------------------------------------------------------------------
+
+
+def model_retrain():
     print("\n\n[EXAMPLE 2] Retraining on new data...")
     print("-" * 60)
-    
-    # First create some new training data
+
     new_data_file = "new_training_data.txt"
     if not os.path.exists(new_data_file):
         print(f"Creating new training data: {new_data_file}")
         with open(new_data_file, "w", encoding="utf-8") as f:
             for i in range(100):
                 f.write(f"New sample sentence {i} about deep learning and neural networks.\n")
-                f.write(f"Transformers are powerful models for natural language processing.\n")
+                f.write("Transformers are powerful models for natural language processing.\n")
         print(f"✓ Created {new_data_file}")
-    
-    # Uncomment to retrain (this will take time)
-    # try:
-    #     retrain_model(
-    #         model_dir="./my_slm",
-    #         new_data_path="new_training_data.txt",
-    #         output_dir="./my_slm_retrained",
-    #         num_epochs=2,
-    #         batch_size=8,
-    #         learning_rate=5e-5  # Lower than original training
-    #     )
-    # except FileNotFoundError as e:
-    #     print(f"⚠️  {e}")
-    
-    
-    # -----------------------------------------------------------------------
-    # EXAMPLE 3: INCREMENTAL UPDATE
-    # -----------------------------------------------------------------------
+
+    try:
+        retrain_model(
+            model_dir="./my_slm",
+            new_data_path=new_data_file,
+            output_dir="./my_slm",
+            num_epochs=2,
+            batch_size=8,
+            learning_rate=5e-5
+        )
+    except FileNotFoundError as e:
+        print(f"⚠️  {e}")
+
+
+def model_update():
     print("\n\n[EXAMPLE 3] Incremental model update...")
     print("-" * 60)
-    
-    # Create incremental data
+
     incremental_data_file = "incremental_data.txt"
     if not os.path.exists(incremental_data_file):
         print(f"Creating incremental data: {incremental_data_file}")
@@ -511,19 +496,55 @@ if __name__ == "__main__":
             for i in range(30):
                 f.write(f"Incremental update {i}: New knowledge about AI and ML.\n")
         print(f"✓ Created {incremental_data_file}")
-    
-    # Uncomment to perform incremental update
-    # try:
-    #     update_model_incrementally(
-    #         model_dir="./my_slm",
-    #         new_data_path="incremental_data.txt",
-    #         num_epochs=1,
-    #         learning_rate=1e-5  # Very low for continuous learning
-    #     )
-    # except FileNotFoundError as e:
-    #     print(f"⚠️  {e}")
-    
-    
-    print("\n\n" + "#" * 60)
-    print("# COMPLETE! See comments above to enable Examples 2 & 3")
+
+    try:
+        update_model_incrementally(
+            model_dir="./my_slm",
+            new_data_path=incremental_data_file,
+            num_epochs=1,
+            learning_rate=1e-5
+        )
+    except FileNotFoundError as e:
+        print(f"⚠️  {e}")
+
+# -----------------------------------------------------------------------
+# Main entry point with argument selection
+# -----------------------------------------------------------------------
+if __name__ == "__main__":
+    print("\n" + "#" * 60)
+    print("# COMPREHENSIVE GUIDE: LOAD, USE, AND RETRAIN CUSTOM SLM MODEL")
     print("#" * 60)
+
+    parser = argparse.ArgumentParser(description="Run SLM model examples")
+    parser.add_argument(
+        "--operation",
+        type=str,
+        choices=["generate", "retrain", "update"],
+        required=True,
+        help="Select which example to run: 1 (model generate), 2 (model retrain), 3 (model update)"
+    )
+    args = parser.parse_args()
+
+    if args.operation == "generate":
+        model_generation()
+    elif args.operation == "retrain":
+        model_retrain()
+    elif args.operation == "update":
+        model_update()
+
+    print("\n" + "#" * 60)
+    print("# COMPLETE!")
+    print("#" * 60)
+
+################################################################################
+"""
+Run example 1: model generateion and evaluation
+bash >> python your_script.py --operation 1
+
+Run example 2: model retraining on new data
+bash >> python your_script.py --operation 2
+
+Run example 3: model incremental update
+bash >> python your_script.py --operation 3
+"""
+###############################################################################
